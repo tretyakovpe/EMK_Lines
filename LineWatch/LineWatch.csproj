@@ -1,0 +1,46 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows7.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <StartupObject></StartupObject>
+    <PlatformTarget>x64</PlatformTarget>
+    <ApplicationIcon>stanok.ico</ApplicationIcon>
+    <ProduceReferenceAssembly>False</ProduceReferenceAssembly>
+    <NeutralLanguage>ru-RU</NeutralLanguage>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <FileAlignment>4096</FileAlignment>
+    <GenerateAssemblyInfo>False</GenerateAssemblyInfo>
+    <IsPublishable>False</IsPublishable>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <FileAlignment>4096</FileAlignment>
+    <GenerateAssemblyInfo>False</GenerateAssemblyInfo>
+    <IsPublishable>False</IsPublishable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="conf\**" />
+    <EmbeddedResource Remove="conf\**" />
+    <None Remove="conf\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="stanok.ico">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="itext.bouncy-castle-adapter" Version="8.0.4" />
+    <PackageReference Include="itext7" Version="8.0.4" />
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.1" />
+    <PackageReference Include="Sharp7" Version="1.1.84" />
+  </ItemGroup>
+
+</Project>
