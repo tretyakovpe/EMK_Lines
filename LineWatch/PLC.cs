@@ -7,14 +7,12 @@ namespace LineWatch
     /// </summary>
     /// <param name="Name">Название</param>
     /// <param name="IP">Адрес</param>
-    /// <param name="Port">Порт, не используется</param>
     /// <param name="Printer">Принтер, на который отправляется бирка</param>
     /// <param name="Label">Нужно ли печатать бирку</param>
-    public class PLC(string Name, string IP, int Port, string Printer, bool Label) : Sharp7.S7Client
+    public class PLC(string Name, string IP, string Printer, bool Label) : Sharp7.S7Client
     {
         public new string Name { get; set; } = Name;
         public string IP { get; set; } = IP;
-        public int Port { get; set; } = Port;
         public string Printer { get; set; } = Printer;
         public bool Label { get; set; } = Label;
         public bool lastStatus { get; set; } = false;
@@ -37,7 +35,7 @@ namespace LineWatch
             {
                 if (lastStatus == true)
                 {
-                    File.AppendAllText(@"./failures/"+Name+".log",DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss ") + Name + " " + ErrorText(res));
+                    File.AppendAllText(@"./failures/"+Name+".log",DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss ") + Name + " " + ErrorText(res)+"\n\r");
                     Console.WriteLine(DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss ") + Name + " " + ErrorText(res));
                     lastStatus = false;
                     return;
