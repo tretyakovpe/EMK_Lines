@@ -15,11 +15,18 @@ namespace LineWatch
 
         public static void Execute(string SQLcommand)
         {
-            connection.Open();
-            command.CommandText = SQLcommand;
-            command.Connection = connection;
-            command.ExecuteNonQuery();
-            connection.Close();
+            try
+            {
+                connection.Open();
+                command.CommandText = SQLcommand;
+                command.Connection = connection;
+                command.ExecuteNonQuery();
+                connection.Close();
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(DateTime.Now.ToString()+"Ошибка записи в БД: " +e.Message);
+            }
         }
     }
 }
