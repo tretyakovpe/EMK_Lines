@@ -15,7 +15,7 @@ namespace LineWatch
         public string IP { get; set; } = IP;
         public string Printer { get; set; } = Printer;
         public bool Label { get; set; } = Label;
-        public bool lastStatus { get; set; } = false;
+        public bool isOKbefore { get; set; } = false;
 
         /// <summary>
         /// Подключается к станции по IP.
@@ -29,101 +29,114 @@ namespace LineWatch
                 Console.WriteLine(DT.ToString("dd.MM.yyyy HH:mm:ss ") + " Станция " + Name + " подключена.");
                 GetPlcDateTime(ref DT);
                 Console.WriteLine(Name + " Текущее время на станции " + DT.ToString());
-                lastStatus = true;
+                isOKbefore = true;
             }
             else
             {
-                if (lastStatus == true)
+                if (isOKbefore == true)
                 {
-                    File.AppendAllText(@"./failures/"+Name+".log",DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss ") + Name + " " + ErrorText(res)+"\n\r");
+                    File.AppendAllText(@"./failures/" + Name + ".log", DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss ") + Name + " " + ErrorText(res) + "\n\r");
                     Console.WriteLine(DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss ") + Name + " " + ErrorText(res));
-                    lastStatus = false;
-                    return;
+                    isOKbefore = false;
                 }
+                return;
             }
 
         }
         /// <summary>
         /// Опрашивает станцию. Если видит флаг законченной коробки - печатает бирку.
         /// </summary>
-        public void Poll()
+        public async void Poll()
         {
             DateTime DT = DateTime.Now;
             Console.WriteLine(DT.ToString("dd.MM.yyyy HH:mm:ss") + " Зарегистрирована линия " + Name);
             byte[] db = new byte[26];
             while (true)
             {
-                if (Connected)
+                if (isOKbefore == false)
                 {
-                    //Посылаем лайвбит
-                    byte[] flag = new byte[1];
-                    S7.SetBitAt(flag, 0, 0, true);
-                    int result = DBWrite(1012, 0, 1, flag);
-                    if (result == 0)
+                    Connect();
+                }
+                else
+                {
+                    if (Connected)
                     {
-                        DT = DateTime.Now;
-                        //Читаем бит готовности ящика
-                        result = DBRead(1012, 0, 26, db);
+                        isOKbefore = true;
+                        //Посылаем лайвбит
+                        byte[] flag = new byte[1];
+                        S7.SetBitAt(flag, 0, 0, true);
+                        int result = DBWrite(1012, 0, 1, flag);
                         if (result == 0)
                         {
-                            bool boxIsReady = S7.GetBitAt(db, 1, 0);
-                            string Material = S7.GetStringAt(db, 2);
-                            double Amount = S7.GetRealAt(db, 22);
-                            if (boxIsReady)
+                            DT = DateTime.Now;
+                            //Читаем бит готовности ящика
+                            result = DBRead(1012, 0, 26, db);
+                            if (result == 0)
                             {
-                                //Обнуляем на линии флаг собранного ящика
-                                S7.SetBitAt(flag, 0, 0, false);
-                                DBWrite(1012, 1, 1, flag);
-
-                                //Уникальный номер контейнера (12 символов - первые 3 символа - идентификатор станции, остальные 9 - сквозной номер, централизованный)
-                                string tempNumber = Name.ToString().PadLeft(2, '0') + DT.ToString("yyMMddHHmm");
-                                Console.WriteLine(DT.ToString() + "\t" + tempNumber + "\t" + Name + "\t" + Material + "\t" + Amount.ToString());
-                                HandlingUnit box = new(Convert.ToInt64(tempNumber), Material, (int)Amount);
-
-
-
-                                //Если для станции установлен признак печати, печатаем бирку
-                                if (Label)
+                                bool boxIsReady = S7.GetBitAt(db, 1, 0);
+                                string Material = S7.GetStringAt(db, 2);
+                                double Amount = S7.GetRealAt(db, 22);
+                                if (boxIsReady)
                                 {
-                                    var labelFile = LabelGenerator.MakeLabel(box);
-                                    File.Copy(labelFile, @"\\NAS\" + Printer, true);
+                                    //Обнуляем на линии флаг собранного ящика
+                                    S7.SetBitAt(flag, 0, 0, false);
+                                    DBWrite(1012, 1, 1, flag);
+                                    //Уникальный номер контейнера (12 символов - первые 3 символа - идентификатор станции, остальные 9 - сквозной номер, централизованный)
+                                    string tempNumber = Name.ToString().PadLeft(2, '0') + DT.ToString("yyMMddHHmm");
+                                    Console.WriteLine(DT.ToString() + "\t" + tempNumber + "\t" + Name + "\t" + Material + "\t" + Amount.ToString());
+                                    //если количество ноль, то в базу не пишем, только на экран.
+                                    if (Amount > 0)
+                                    {
+                                        HandlingUnit box = new(Convert.ToInt64(tempNumber), Material, (int)Amount);
+                                        //Если для станции установлен признак печати, печатаем бирку
+                                        if (Label)
+                                        {
+                                            var labelFile = LabelGenerator.MakeLabel(box);
+                                                File.Copy(labelFile, @"\\NAS\" + Printer, true);
+                                        }
+
+                                        //Сохраняем в базу
+                                        /*string query = "INSERT INTO prod VALUES ('"
+                                            + DT.ToString("yyyy-MM-dd") + "', '"
+                                            + DT.ToString("HH:mm:ss.F") + "', '"
+                                            + tempNumber + "', '"
+                                            + Name + "', '"
+                                            + Material + "', "
+                                            + Amount.ToString() + ");";
+                                        DataAccess.Execute(query);*/
+                                        await DataAccess.AddBoxAsync(DT.ToString("yyyy-MM-dd"), DT.ToString("HH:mm:ss.F"), tempNumber, Name, Material, (int)Amount);
+
+                                    }
                                 }
-
-                                //Сохраняем в файл
-                                //using StreamWriter w = File.AppendText("_data.csv");
-                                //await w.WriteLineAsync(DT.ToString("dd.MM.yyyy,HH:mm:ss") + "," + tempNumber + "," + Name + "," + Material + "," + Amount.ToString());
-                                //w.Flush();
-
-                                //Сохраняем в базу
-                                string query = "INSERT INTO prod VALUES ('"
-                                    + DT.ToString("yyyy-MM-dd") + "', '"
-                                    + DT.ToString("HH:mm:ss.F") + "', '"
-                                    + tempNumber + "', '"
-                                    + Name + "', '"
-                                    + Material + "', "
-                                    + Amount.ToString() + ");";
-                                DataAccess.Execute(query); 
+                            }
+                            else
+                            {
+                                if (isOKbefore == true)
+                                {
+                                    Console.WriteLine(DateTime.Now.ToString() + " " + Name + " Ошибка чтения блока 1012: " + ErrorText(result));
+                                    File.AppendAllText(@"./failures/" + Name + ".log", DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss ") + Name + "  Ошибка чтения блока 1012: " + ErrorText(result) + "\n\r");
+                                    isOKbefore = false;
+                                }
                             }
                         }
                         else
                         {
-                            Console.WriteLine(DateTime.Now.ToString() + " " + Name + " Ошибка чтения блока 1012: " + ErrorText(result));
+                            if (isOKbefore == true)
+                            {
+                                Console.WriteLine(DateTime.Now.ToString() + " " + Name + " Ошибка записи лайвбита: " + ErrorText(result));
+                                File.AppendAllText(@"./failures/" + Name + ".log", DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss ") + Name + "  Ошибка записи лайвбита: " + ErrorText(result) + "\n\r");
+                                isOKbefore = false;
+                            }
                         }
+
                     }
                     else
                     {
-                        Console.WriteLine(DateTime.Now.ToString() + " " + Name + " Ошибка записи лайвбита: " + ErrorText(result));
+                        Connect();
                     }
-
                 }
-                else
-                {
-                    Connect();
-                }
-                Thread.Sleep(10);
+                Thread.Sleep(1000);
             }
-
         }
-
     }
 }

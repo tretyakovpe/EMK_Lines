@@ -12,6 +12,10 @@
     <NeutralLanguage>ru-RU</NeutralLanguage>
   </PropertyGroup>
 
+  <PropertyGroup>
+	<SatelliteResourceLanguages>ru_RU;en_US</SatelliteResourceLanguages>
+  </PropertyGroup>
+
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <FileAlignment>4096</FileAlignment>
     <GenerateAssemblyInfo>False</GenerateAssemblyInfo>
@@ -25,12 +29,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="conf\**" />
-    <EmbeddedResource Remove="conf\**" />
-    <None Remove="conf\**" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Content Include="stanok.ico">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
@@ -41,6 +39,10 @@
     <PackageReference Include="itext7" Version="8.0.4" />
     <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.1" />
     <PackageReference Include="Sharp7" Version="1.1.84" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="data\" />
   </ItemGroup>
 
 </Project>

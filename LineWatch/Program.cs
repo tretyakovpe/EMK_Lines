@@ -1,5 +1,6 @@
 ﻿using LineWatch;
 
+
 DataAccess.InitDB();
 Directory.CreateDirectory(@"./conf/");
 Directory.CreateDirectory(@"./pdf/");
@@ -7,13 +8,13 @@ Directory.CreateDirectory(@"./failures/");
 
 var filename = @"./conf/lines.txt";
 List<PLC> plcList = new();
- if (File.Exists(@filename))
+if (File.Exists(@filename))
 {
     var listFile = File.ReadLines(@filename);
     foreach (string line in listFile)
     {
         string[] items = line.Split(",");
-        PLC p = new(items[0], items[1], items[2], items[3]=="true");
+        PLC p = new(items[0], items[1], items[2], items[3] == "true");
         plcList.Add(p);
     }
 }
