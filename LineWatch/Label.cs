@@ -43,11 +43,12 @@
             new Field(106,39,"Supplier","", true,"S"),              //      11
             new Field(6,14,"Date","01.01.2022", false),             //      12
             new Field(106,14,"Packing type","TEST", false),         //      13
+            new Field(70,89," ","Стеклоподъемник электрический", false),//  14
         ];
     }
 
     /// <summary>
-    /// Описание вормата поля бирки
+    /// Описание формата поля бирки
     /// </summary>
     /// <param name="X">Положение по горизонтали</param>
     /// <param name="Y">Положение по вертикали</param>

@@ -36,13 +36,6 @@ namespace LineWatch
             {
                 List<Material> manualList = new()
                 {
-                    new Material("C23443-114", "8450045950", "", "", 2, 20),
-                    new Material("C23442-114", "8450045951", "", "", 2, 20),
-                    new Material("C61999-112", "8450111766", "", "", 2, 20),
-                    new Material("C61998-112", "8450111767", "", "", 2, 20),
-                    new Material("C36388-114", "8450087580", "", "", 2, 20),
-                    new Material("C36387-114", "8450087581", "", "", 2, 20),
-
                     new Material("E68985-103", "8450040355", "", "8USP0010", 2, 20),
                     new Material("E68986-103", "8450040354", "", "8USP0010", 2, 20),
                     //vesta
@@ -92,6 +85,16 @@ namespace LineWatch
                     label.labelFields[13].Value = material.Package;
                     break;
                 }
+                else
+                {
+                    label.labelFields[0].Value = "АвтоВАЗ";
+                    label.labelFields[1].Value = "";
+                    label.labelFields[4].Value = "";
+                    label.labelFields[5].Value = "";
+                    label.labelFields[6].Value = "1";
+                    label.labelFields[7].Value = "";
+                    label.labelFields[13].Value = "";
+                }
             }
             label.labelFields[2].Value = "992410";
             label.labelFields[8].Value = box.Amount.ToString();
@@ -99,9 +102,10 @@ namespace LineWatch
             label.labelFields[10].Value = box.Number.ToString();
             label.labelFields[11].Value = "M0FAP";
             label.labelFields[12].Value = DT.ToString("dd.MM.yyyy HH:mm:ss");
+            label.labelFields[14].Value = box.Description;
 
             PdfFontFactory.RegisterSystemDirectories();
-            var fontLibrary = PdfFontFactory.GetRegisteredFonts();
+            //var fontLibrary = PdfFontFactory.GetRegisteredFonts();
             PdfFont font = PdfFontFactory.CreateRegisteredFont("arial");
             PdfDocument pdfDoc = new(new PdfWriter(filename));
             pdfDoc.SetDefaultPageSize(PageSize.A5);
@@ -123,13 +127,13 @@ namespace LineWatch
 
             foreach (Field field in label.labelFields)
             {
-                //   НАЗВАНИЕ ПОЛЯ
+                //  НАЗВАНИЕ ПОЛЯ
                 doc.ShowTextAligned(new Paragraph(field.Name).SetFontSize(8).SetFont(font),
                     (float)(field.X * mm), (float)(field.Y * mm), TextAlignment.LEFT, VerticalAlignment.TOP);
-                //ЗНАЧЕНИЕ
+                //  ЗНАЧЕНИЕ
                 doc.ShowTextAligned(new Paragraph(field.Value).SetFontSize(18).SetFont(font),
                     (float)(field.X * mm + 20), (float)(field.Y * mm - 9), TextAlignment.LEFT, VerticalAlignment.TOP);
-                //   ШТРИХКОД
+                //  ШТРИХКОД
                 if (field.Barcode == true)
                 {
                     barcode.SetCode(field.Code + field.Value);

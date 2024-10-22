@@ -1,5 +1,4 @@
-﻿using Microsoft.Identity.Client.NativeInterop;
-using Sharp7;
+﻿using Sharp7;
 using System.Text;
 
 namespace LineWatch
@@ -11,7 +10,7 @@ namespace LineWatch
     /// <param name="IP">Адрес</param>
     /// <param name="Printer">Принтер, на который отправляется бирка</param>
     /// <param name="Label">Нужно ли печатать бирку</param>
-    public class PLC(string Name, string IP, string Printer, bool Label) : Sharp7.S7Client
+    public class PLC_Test(string Name, string IP, string Printer, bool Label) : Sharp7.S7Client
     {
         public new string Name { get; set; } = Name;
         public string IP { get; set; } = IP;
@@ -53,7 +52,7 @@ namespace LineWatch
             DateTime DT = DateTime.Now;
             Console.WriteLine(DT.ToString("dd.MM.yyyy HH:mm:ss") + " Зарегистрирована линия " + Name);
             byte[] db = new byte[64];
-            byte[] partdata = new byte[34];
+            byte[] partdata = new byte[32];
             while (true)
             {
                 if (isOKbefore == false)
@@ -73,25 +72,25 @@ namespace LineWatch
                         {
                             DT = DateTime.Now;
                             //Читаем блок данных о собранной детали
-                            result = DBRead(1013, 0, 34, partdata);
+                            /*
+                             result = DBRead(1013, 0, 32, partdata);
                             if (result == 0)
                             {
+                                bool partIsReady = S7.GetBitAt(partdata, 2, 2);
                                 string partMaterial = S7.GetStringAt(partdata, 14);
-                                bool partReady = S7.GetBitAt(partdata, 2, 2);
                                 int counter = S7.GetIntAt(partdata, 32);
                                 bool partOK = S7.GetBitAt(partdata, 0, 0);
                                 bool partNOK = S7.GetBitAt(partdata, 0, 1);
-                                bool testStarted = S7.GetBitAt(partdata, 0, 2);
-                                bool testFinished = S7.GetBitAt(partdata, 0, 3);
-                                if (partReady)
+                                if (partOK|partNOK)
                                 {
                                     //Обнуляем на линии флаг собранной детали
-                                    byte[] f = new byte[1];
-                                    S7.SetBitAt(f, 0, 2, false);
-                                    DBWrite(1013, 2, 1, f);
-                                    Console.WriteLine("\t" + DT.ToString() + "\t" + Name + "\t" + partMaterial + "\t" + partOK + "\t" + partNOK + "\t" + counter.ToString());
+                                    S7.SetBitAt(flag, 0, 2, false);
+                                    DBWrite(1013, 2, 1, flag);
+
+
+                                    Console.WriteLine(DT.ToString() + "\t" + Name + "\t" + partMaterial + "\t"+ partOK + "\t"+partNOK +"\t"+counter.ToString());
                                 }
-                            }
+                            }*/
 
                             //Читаем бит готовности ящика
                             result = DBRead(1012, 0, 64, db);
@@ -100,45 +99,50 @@ namespace LineWatch
                                 bool boxIsReady = S7.GetBitAt(db, 1, 0);
                                 string Material = S7.GetStringAt(db, 2);
 
-                                //=======Это извращение для чтения названия продукции. Она прилетает в ASCII
                                 byte[] temp_material_data = new byte[36];
                                 System.Array.ConstrainedCopy(db, 28, temp_material_data, 0, 36);
                                 string Material_Description = Encoding.GetEncoding(1251).GetString(temp_material_data);
-                                //===================
 
                                 double Amount = S7.GetRealAt(db, 22);
-                                if (boxIsReady)
+                                string tempNumber = Name.ToString().PadLeft(2, '0') + DT.ToString("yyMMddHHmm");
+                                if (Label)
                                 {
-                                    //Обнуляем на линии флаг собранного ящика
-                                    S7.SetBitAt(flag, 0, 0, false);
-                                    DBWrite(1012, 1, 1, flag);
-                                    //Уникальный номер контейнера (12 символов - первые 3 символа - идентификатор станции, остальные 9 - сквозной номер, централизованный)
-                                    string tempNumber = Name.ToString().PadLeft(2, '0') + DT.ToString("yyMMddHHmm");
-                                    Console.WriteLine(DT.ToString() + "\t" + tempNumber + "\t" + Name + "\t" + Material + "\t" + Material_Description + "\t" + Amount.ToString());
-                                    //если количество ноль, то в базу не пишем, только на экран.
-                                    if (Amount > 0)
-                                    {
-                                        HandlingUnit box = new(Convert.ToInt64(tempNumber), Material, (int)Amount, Material_Description);
-                                        //Если для станции установлен признак печати, печатаем бирку
-                                        if (Label)
-                                        {
-                                            var labelFile = LabelGenerator.MakeLabel(box);
-                                            File.Copy(labelFile, @"\\NAS\" + Printer, true);
-                                        }
-
-                                        //Сохраняем в базу
-                                        /*string query = "INSERT INTO prod VALUES ('"
-                                            + DT.ToString("yyyy-MM-dd") + "', '"
-                                            + DT.ToString("HH:mm:ss.F") + "', '"
-                                            + tempNumber + "', '"
-                                            + Name + "', '"
-                                            + Material + "', "
-                                            + Amount.ToString() + ");";
-                                        DataAccess.Execute(query);*/
-                                        await DataAccess.AddBoxAsync(DT.ToString("yyyy-MM-dd"), DT.ToString("HH:mm:ss.F"), tempNumber, Name, Material, (int)Amount);
-
-                                    }
+                                    HandlingUnit box = new(Convert.ToInt64("999"), Material, (int)Amount, Material_Description);
+                                    var labelFile = LabelGenerator.MakeLabel(box);
+                                    //File.Copy(labelFile, @"\\NAS\" + Printer, true);
                                 }
+                                Console.WriteLine(DT.ToString() + "\t" + tempNumber + "\t" + Name + "\t" + Material + "\t" + Material_Description + "\t" + Amount.ToString());
+
+                                /*if (boxIsReady)
+                                    {
+                                        //Обнуляем на линии флаг собранного ящика
+                                        S7.SetBitAt(flag, 0, 0, false);
+                                        DBWrite(1012, 1, 1, flag);
+                                        //Уникальный номер контейнера (12 символов - первые 3 символа - идентификатор станции, остальные 9 - сквозной номер, централизованный)
+                                        //если количество ноль, то в базу не пишем, только на экран.
+                                        if (Amount > 0)
+                                        {
+                                            HandlingUnit box = new(Convert.ToInt64("999"), Material, (int)Amount);
+                                            //Если для станции установлен признак печати, печатаем бирку
+                                            if (Label)
+                                            {
+                                                var labelFile = LabelGenerator.MakeLabel(box);
+                                                File.Copy(labelFile, @"\\NAS\" + Printer, true);
+                                            }
+
+                                            //Сохраняем в базу
+                                            string query = "INSERT INTO prod VALUES ('"
+                                                + DT.ToString("yyyy-MM-dd") + "', '"
+                                                + DT.ToString("HH:mm:ss.F") + "', '"
+                                                + tempNumber + "', '"
+                                                + Name + "', '"
+                                                + Material + "', "
+                                                + Amount.ToString() + ");";
+                                            DataAccess.Execute(query);
+                                            await DataAccess.AddBoxAsync(DT.ToString("yyyy-MM-dd"), DT.ToString("HH:mm:ss.F"), tempNumber, Name, Material, (int)Amount);
+
+                                        }
+                                    }*/
                             }
                             else
                             {
@@ -166,7 +170,7 @@ namespace LineWatch
                         Connect();
                     }
                 }
-                Thread.Sleep(100);
+                Thread.Sleep(10000);
             }
         }
     }

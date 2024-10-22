@@ -39,4 +39,15 @@ foreach (var elem in plcList)
     };
     plcThread.Start();
 }
+
+/*
+//Добавим одну станцию в качестве тестовой
+PLC_Test PLC_Test = new PLC_Test("75 test", "10.149.50.27", "togp0012", true);
+Thread plcTestThread = new(() => PLC_Test.Poll())
+{
+    Name = PLC_Test.Name
+};
+plcTestThread.Start();
+*/
+
 //await DataAccess.connection.CloseAsync();

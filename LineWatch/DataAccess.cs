@@ -59,7 +59,7 @@ namespace LineWatch
             var id = await command.ExecuteScalarAsync();
             // если нам не надо возвращать id
             //var id = await command.ExecuteNonQueryAsync();
-            Console.WriteLine(Date + "\t" + Time + "\t" + Label + "\t" + Name + "\t" + Material + "\t" + Amount.ToString() + $" Id: {id}");
+            //Console.WriteLine(Date + "\t" + Time + "\t" + Label + "\t" + Name + "\t" + Material + "\t" + Amount.ToString() + $" Id: {id}");
         }
 
         public static int Execute(string SQLcommand)
