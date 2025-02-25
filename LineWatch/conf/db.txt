@@ -1,0 +1,1 @@
+﻿Server=tcp:TOGPROD;Database=master;Trusted_Connection=True;TrustServerCertificate=True

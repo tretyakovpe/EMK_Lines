@@ -45,4 +45,10 @@
     <Folder Include="data\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="conf\db.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

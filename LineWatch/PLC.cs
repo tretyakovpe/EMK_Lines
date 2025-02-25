@@ -17,7 +17,7 @@ namespace LineWatch
         public string IP { get; set; } = IP;
         public string Printer { get; set; } = Printer;
         public bool Label { get; set; } = Label;
-        public bool isOKbefore { get; set; } = false;
+        public bool IsOKbefore { get; set; } = false;
 
         /// <summary>
         /// Подключается к станции по IP.
@@ -31,15 +31,15 @@ namespace LineWatch
                 Console.WriteLine(DT.ToString("dd.MM.yyyy HH:mm:ss ") + " Станция " + Name + " подключена.");
                 GetPlcDateTime(ref DT);
                 Console.WriteLine(Name + " Текущее время на станции " + DT.ToString());
-                isOKbefore = true;
+                IsOKbefore = true;
             }
             else
             {
-                if (isOKbefore == true)
+                if (IsOKbefore == true)
                 {
                     File.AppendAllText(@"./failures/" + Name + ".log", DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss ") + Name + " " + ErrorText(res) + "\n\r");
                     Console.WriteLine(DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss ") + Name + " " + ErrorText(res));
-                    isOKbefore = false;
+                    IsOKbefore = false;
                 }
                 return;
             }
@@ -56,7 +56,7 @@ namespace LineWatch
             byte[] partdata = new byte[34];
             while (true)
             {
-                if (isOKbefore == false)
+                if (IsOKbefore == false)
                 {
                     Connect();
                 }
@@ -64,7 +64,7 @@ namespace LineWatch
                 {
                     if (Connected)
                     {
-                        isOKbefore = true;
+                        IsOKbefore = true;
                         //Посылаем лайвбит
                         byte[] flag = new byte[1];
                         S7.SetBitAt(flag, 0, 0, true);
@@ -83,13 +83,22 @@ namespace LineWatch
                                 bool partNOK = S7.GetBitAt(partdata, 0, 1);
                                 bool testStarted = S7.GetBitAt(partdata, 0, 2);
                                 bool testFinished = S7.GetBitAt(partdata, 0, 3);
+                                bool[] MKM = new bool[32];
+
                                 if (partReady)
                                 {
                                     //Обнуляем на линии флаг собранной детали
                                     byte[] f = new byte[1];
                                     S7.SetBitAt(f, 0, 2, false);
                                     DBWrite(1013, 2, 1, f);
+                                    Console.WriteLine(partdata.ToString());
                                     Console.WriteLine("\t" + DT.ToString() + "\t" + Name + "\t" + partMaterial + "\t" + partOK + "\t" + partNOK + "\t" + counter.ToString());
+
+                                    Part newPart = new(partOK, partNOK, testStarted, testFinished, false, false, false, false, 0, DT, false, false, counter);
+                                    Buffer.BlockCopy(MKM,0,newPart.MKM,0,32);
+                                    newPart.EMC_number = partMaterial;
+                                    string json = newPart.ToJson();
+                                    //TODO Доделать сохранение в БД кадой детали. Нужно сделать в БД хранимую процедуру AddPart.
                                 }
                             }
 
@@ -101,9 +110,12 @@ namespace LineWatch
                                 string Material = S7.GetStringAt(db, 2);
 
                                 //=======Это извращение для чтения названия продукции. Она прилетает в ASCII
+                                string Material_Description = Encoding.GetEncoding(1251).GetString(db, 28, 36);
+                                /*
                                 byte[] temp_material_data = new byte[36];
                                 System.Array.ConstrainedCopy(db, 28, temp_material_data, 0, 36);
                                 string Material_Description = Encoding.GetEncoding(1251).GetString(temp_material_data);
+                                */
                                 //===================
 
                                 double Amount = S7.GetRealAt(db, 22);
@@ -142,21 +154,21 @@ namespace LineWatch
                             }
                             else
                             {
-                                if (isOKbefore == true)
+                                if (IsOKbefore == true)
                                 {
                                     Console.WriteLine(DateTime.Now.ToString() + " " + Name + " Ошибка чтения блока 1012: " + ErrorText(result));
                                     File.AppendAllText(@"./failures/" + Name + ".log", DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss ") + Name + "  Ошибка чтения блока 1012: " + ErrorText(result) + "\n\r");
-                                    isOKbefore = false;
+                                    IsOKbefore = false;
                                 }
                             }
                         }
                         else
                         {
-                            if (isOKbefore == true)
+                            if (IsOKbefore == true)
                             {
                                 Console.WriteLine(DateTime.Now.ToString() + " " + Name + " Ошибка записи лайвбита: " + ErrorText(result));
                                 File.AppendAllText(@"./failures/" + Name + ".log", DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss ") + Name + "  Ошибка записи лайвбита: " + ErrorText(result) + "\n\r");
-                                isOKbefore = false;
+                                IsOKbefore = false;
                             }
                         }
 

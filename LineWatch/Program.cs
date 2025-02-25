@@ -1,6 +1,5 @@
 ﻿using LineWatch;
 
-
 DataAccess.InitDB();
 Directory.CreateDirectory(@"./conf/");
 Directory.CreateDirectory(@"./pdf/");
