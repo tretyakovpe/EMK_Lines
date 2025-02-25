@@ -5,48 +5,24 @@ Directory.CreateDirectory(@"./conf/");
 Directory.CreateDirectory(@"./pdf/");
 Directory.CreateDirectory(@"./failures/");
 
-var filename = @"./conf/lines.txt";
-List<PLC> plcList = new();
-if (File.Exists(@filename))
-{
-    var listFile = File.ReadLines(@filename);
-    foreach (string line in listFile)
-    {
-        string[] items = line.Split(",");
-        PLC p = new(items[0], items[1], items[2], items[3] == "true");
-        plcList.Add(p);
-    }
-}
-else
-{
-    plcList =
-    [
-        new PLC("73","10.149.50.21","togp0018",true),
-        new PLC("74","10.149.50.23","togp0019",true),
-        new PLC("79","10.149.50.25","togp0020",true),
-        new PLC("37","10.149.50.92","togp0021",false),
-    ];
-}
-//HandlingUnit box = new(01010101010101001, "LL1200-100", 100);
-//string filename = LabelGenerator.MakeLabel(box);
+List<Task> tasks = [];
+List<PLC> plcList = DataAccess.GetPLCList();
 
 foreach (var elem in plcList)
 {
-    Thread plcThread = new(() => elem.Poll())
+    // Создаем задачу для каждого PLC
+    tasks.Add(Task.Run(async () =>
     {
-        Name = elem.Name
-    };
-    plcThread.Start();
+        try
+        {
+            await elem.Poll(); // Вызываем асинхронный метод Poll()
+        }
+        catch (Exception ex)
+        {
+            // Логируем ошибку
+            Console.WriteLine($"Ошибка в задаче {elem.Name}: {ex.Message}");
+            File.AppendAllText(@"./failures/ErrorLog.txt", DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss ") + $"Ошибка в задаче {elem.Name}: {ex.Message}" + "\n\r");
+        }
+    }));
 }
-
-/*
-//Добавим одну станцию в качестве тестовой
-PLC_Test PLC_Test = new PLC_Test("75 test", "10.149.50.27", "togp0012", true);
-Thread plcTestThread = new(() => PLC_Test.Poll())
-{
-    Name = PLC_Test.Name
-};
-plcTestThread.Start();
-*/
-
-//await DataAccess.connection.CloseAsync();
+await Task.WhenAll(tasks); // Ожидаем завершения всех задач
