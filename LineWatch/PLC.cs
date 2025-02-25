@@ -129,7 +129,7 @@ namespace LineWatch
                                         S7.SetBitAt(flag, 0, 0, false);
                                         DBWrite(1012, 1, 1, flag);
                                         //Уникальный номер контейнера (12 символов - первые 3 символа - идентификатор станции, остальные 9 - сквозной номер, централизованный)
-                                        string tempNumber = Name.ToString().PadLeft(2, '0') + DT.ToString("yyMMddHHmm");
+                                        string tempNumber = Name.ToString().Trim().PadLeft(2, '0') + DT.ToString("yyMMddHHmm");
                                         Console.WriteLine(DT.ToString() + "\t" + tempNumber + "\t" + Name + "\t" + Material + "\t" + Material_Description + "\t" + Amount.ToString());
                                         //если количество ноль, то в базу не пишем, только на экран.
                                         if (Amount > 0)
